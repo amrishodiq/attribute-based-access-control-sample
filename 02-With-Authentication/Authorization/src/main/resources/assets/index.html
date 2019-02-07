@@ -14,6 +14,12 @@
         <link href="css/surface_styles.css" rel="stylesheet"/>
         
         <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500">
+        
+        <style>
+            .fixed-input-text {
+                height: 48px;
+            }
+        </style>
 
     </head>
     <body>
@@ -41,7 +47,7 @@
                 
                     componentDidMount() {
                         console.log('Fetching all patients data');
-                        axios.get('../v1/patients')
+                        axios.get('../v1/patients', { headers: { token: this.props.token } })
                             .then(res => {
                                 if (res.data.ok && res.data.data != null) {
                                     this.setState({
@@ -51,7 +57,8 @@
                                     console.log('Res is not OK or data is null');
                                 }
                             }, error => {
-                                console.log(error);
+                                console.log(error.response);
+                                
                             });
                     }
                     render() {
@@ -77,8 +84,110 @@
                     }
                 }
                 
+                class Login extends React.Component {
+                    state = {
+                        username: '',
+                        password: ''
+                    };
+                
+                    constructor(props) {
+                        super(props);
+                        
+                        this.clickHandler = this.clicked.bind(this);
+                    }
+                
+                    clicked() {
+                        console.log('clickHandler');
+                        // this.props.authHandler(true);
+                        
+                        axios.post('../v1/auth', {
+                            username: this.state.username,
+                            password: this.state.password
+                        }).then(res => {
+                            if (res.data.ok && res.data.data != null) {
+                                this.props.tokenHandler(res.data.data.token);
+                                this.props.authHandler(true);
+                            } else {
+                                console.log('Res is not OK or data is null');
+                            }
+                        }, error => {
+                            console.log(error.response);
+                            alert(error.response.data.message);
+                        });
+                    }
+                    
+                    usernameChanged(evt) {
+                        this.setState({
+                            username: evt.target.value
+                        });
+                    }
+                    
+                    passwordChanged(evt) {
+                        this.setState({
+                            password: evt.target.value
+                        });
+                    }
+                
+                    render() {
+                        return <div className="g--10 m--1 card">
+                            <input value={this.state.username} onChange={evt => this.usernameChanged(evt)} type="text" className="fixed-input-text" required placeholder="Username"/>
+                            <input value={this.state.password} onChange={evt => this.passwordChanged(evt)} type="password" className="fixed-input-text" required placeholder="Password"/>
+                            <button className="btn--raised" onClick={ this.clickHandler }>Login</button>
+                        </div>;
+                    }
+                }
+                
+                class Dashboard extends React.Component {
+                    state = {
+                        token: null,
+                        authenticated: false
+                    };
+                    
+                    constructor(props) {
+                        super(props);
+                        
+                        this.authHandler = this.setAuthenticated.bind(this);
+                        this.tokenHandler = this.setToken.bind(this);
+                    }
+                    
+                    setToken(newToken) {
+                        this.setState({
+                            token: newToken
+                        });
+                    }
+                    
+                    setAuthenticated(newValue) {
+                        console.log('setAuthenticated '+newValue);
+                        this.setState({
+                            authenticated: newValue
+                        });
+                    }
+                
+                    render() {
+                        if (!this.state.authenticated) {
+                            return <Login authHandler={ this.authHandler } tokenHandler={ this.tokenHandler }/>;
+                        }
+                        
+                        return <Patients token={ this.state.token }/>;
+                    }
+                }
+                
+                class Security {
+                    constructor() {
+                        this.authenticated = false;
+                    }
+                    
+                    setAuthenticated(authenticated) {
+                        this.authenticated = authenticated;
+                    }
+                    
+                    isAuthenticated() {
+                        return this.authenticated;
+                    }
+                }
+                
                 ReactDOM.render(
-                    React.createElement(Patients), document.getElementById('root')
+                    React.createElement(Dashboard), document.getElementById('root')
                 );
             };
         </script>
